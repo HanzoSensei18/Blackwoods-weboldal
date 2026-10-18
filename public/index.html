@@ -1,0 +1,666 @@
+
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwoods Bar & Grill | Sandy Shores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Roboto+Slab:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --paper: #e4d2ad;
+  --ink: #352316;
+  --gold: #c49a5b;
+  --dark: #17110c;
+  --red: #762f25;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 28px 14px 60px;
+  color: var(--ink);
+  font-family: 'Roboto Slab', Georgia, serif;
+  background: radial-gradient(ellipse at top, #55402a, #21180f 60%, #100c08);
+}
+button, input, select, textarea { font: inherit; }
+header { text-align: center; color: var(--paper); margin-bottom: 25px; }
+header h1 {
+  font-family: 'Rye', Georgia, serif;
+  font-size: clamp(30px, 5vw, 54px);
+  font-weight: 400;
+  letter-spacing: 3px;
+  margin: 0 0 8px;
+  text-shadow: 2px 3px #000;
+}
+header p {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  font-size: 12px;
+}
+.book {
+  max-width: 1120px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #24170f;
+  box-shadow: 0 25px 65px #000b;
+  border: 7px solid #382417;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.page {
+  position: relative;
+  padding: 35px clamp(18px, 3vw, 40px);
+  background:
+    radial-gradient(ellipse at 15% 15%, #fff3, transparent 40%),
+    repeating-linear-gradient(0deg, #00000005 0px, #00000005 1px, transparent 1px, transparent 4px),
+    var(--paper);
+  min-width: 0;
+}
+.page:first-child { border-right: 3px double #8d6a40; }
+.page:after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px solid #9c794b88;
+  pointer-events: none;
+}
+.brand {
+  font-family: 'Rye', Georgia, serif;
+  text-align: center;
+  font-size: 24px;
+  line-height: 1.5;
+  border-bottom: 2px solid #98703c;
+  padding-bottom: 15px;
+  margin-bottom: 23px;
+}
+.brand small {
+  display: block;
+  font-family: 'Roboto Slab', Georgia, serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  margin-top: 5px;
+}
+.section { margin: 23px 0 27px; }
+.section h2 {
+  font-family: 'Rye', Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+  text-align: center;
+  border-bottom: 1px solid #98703c;
+  padding-bottom: 9px;
+  margin: 0 0 17px;
+}
+.item { margin: 0 0 20px; position: relative; z-index: 1; }
+.item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.item-name { min-width: 0; }
+.price { white-space: nowrap; color: #68421e; }
+.item p {
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 5px 0 7px;
+  color: #51402e;
+}
+.add-btn {
+  border: 1px solid #846037;
+  color: #4a301a;
+  background: #d4bc91;
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: .2s;
+}
+.add-btn:hover { background: #b99560; color: #fff8e8; }
+.footer {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 2px;
+  border-top: 1px solid #98703c;
+  padding-top: 14px;
+  margin-top: 30px;
+}
+.cart-wrap {
+  max-width: 900px;
+  margin: 30px auto 0;
+  padding: 24px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 5px solid #382417;
+  box-shadow: 0 15px 45px #0008;
+}
+.cart-wrap h2 {
+  font-family: 'Rye', Georgia, serif;
+  text-align: center;
+  font-weight: 400;
+  margin: 0 0 18px;
+}
+.cart-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  height: 25px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  font: 700 12px Arial, sans-serif;
+}
+.empty { text-align: center; font-size: 13px; color: #68543d; padding: 12px; }
+.cart-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #bba17a;
+  padding: 12px 0;
+  font-size: 13px;
+}
+.qty-btn, .remove-btn {
+  border: 1px solid #98703c;
+  background: #d4bc91;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 4px 9px;
+}
+.remove-btn { color: #7a241d; }
+.total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 18px;
+  margin: 20px 0;
+  border-top: 2px solid #98703c;
+  padding-top: 15px;
+}
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 12px; font-weight: 700; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #a58a62;
+  background: #f4e8ce;
+  color: #352316;
+  border-radius: 0;
+}
+.field textarea { resize: vertical; min-height: 65px; }
+.submit-btn {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  background: #382417;
+  color: #f0d6a4;
+  border: 1px solid #98703c;
+  font-family: 'Rye', Georgia, serif;
+  cursor: pointer;
+}
+.submit-btn:hover { background: #583a24; }
+.submit-btn:disabled { opacity: .6; cursor: wait; }
+.message { margin-top: 14px; font-size: 13px; line-height: 1.6; }
+.message.error { color: #8b2019; }
+.message.success { color: #27542b; }
+.hidden { display: none !important; }
+.note { font-size: 11px; line-height: 1.6; color: #68543d; }
+@media(max-width:720px) {
+  body { padding: 18px 8px 35px; }
+  .book { grid-template-columns: 1fr; }
+  .page:first-child { border-right: 0; border-bottom: 4px double #8d6a40; }
+  .page { padding: 28px 23px; }
+  .cart-wrap { padding: 18px 14px; }
+  .checkout-grid { grid-template-columns: 1fr; }
+  .field.full { grid-column: auto; }
+  .cart-row { gap: 6px; font-size: 11px; }
+}
+@media print {
+  .cart-wrap, .add-btn { display: none !important; }
+  body { background: white; padding: 0; }
+  header { color: black; }
+  header h1 { text-shadow: none; }
+  .book { box-shadow: none; }
+  .page { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>Blackwoods</h1>
+  <p>Bar & Grill · Sandy Shores</p>
+</header>
+
+<main class="book" id="menu">
+
+<section class="page">
+  <div class="brand">BLACKWOODS<small>BAR & GRILL</small></div>
+
+  <div class="section">
+    <h2>A Grillről</h2>
+
+    <article class="item" data-id="deadman" data-name="Dead Man's Burger" data-price="2800">
+      <div class="item-head"><span class="item-name">Dead Man's Burger</span><span class="price">$2.800</span></div>
+      <p>Dupla marhahúspogácsa, dupla cheddar, bacon, karamellizált hagyma, BBQ szósz és ropogós hagymakarika.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="outlaw" data-name="Outlaw Burger" data-price="2700">
+      <div class="item-head"><span class="item-name">Outlaw Burger</span><span class="price">$2.700</span></div>
+      <p>Dupla marhahúspogácsa, dupla sajt, bacon, tükörtojás, hagymakarika és BBQ szósz.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="reaper" data-name="Reaper Burger (Csípős)" data-price="2900">
+      <div class="item-head"><span class="item-name">Reaper Burger (Csípős)</span><span class="price">$2.900</span></div>
+      <p>Dupla hús, cheddar, bacon, jalapeno, sült hagyma és extra csípős Blackwood szósz.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="ribs" data-name="Blackwood BBQ Ribs" data-price="3400">
+      <div class="item-head"><span class="item-name">Blackwood BBQ Ribs</span><span class="price">$3.400</span></div>
+      <p>Füstös BBQ borda, steak burgonya és coleslaw.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="plate" data-name="Dead Man's Plate (Grillezett hústál)" data-price="3700">
+      <div class="item-head"><span class="item-name">Dead Man's Plate (Grillezett hústál)</span><span class="price">$3.700</span></div>
+      <p>Grillkolbász, csirkeszárny, steak burgonya, hagymakarika és BBQ szósz.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="heartstopper" data-name="Heartstopper" data-price="2500">
+      <div class="item-head"><span class="item-name">Heartstopper</span><span class="price">$2.500</span></div>
+      <p>Tripla hús, dupla sajt, bacon.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+  </div>
+
+  <div class="section">
+    <h2>A fritőzből</h2>
+
+    <article class="item" data-id="wings" data-name="Hell Wings (Csípős)" data-price="2000">
+      <div class="item-head"><span class="item-name">Hell Wings (Csípős)</span><span class="price">$2.000</span></div>
+      <p>Ropogós csirkeszárnyak csípős BBQ szósszal.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="buffalo" data-name="Buffalo Chicken Bites" data-price="1600">
+      <div class="item-head"><span class="item-name">Buffalo Chicken Bites</span><span class="price">$1.600</span></div>
+      <p>Ropogós csirkefalatok Buffalo szósszal, ranch mártogatóssal.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="fish" data-name="Fish & Chips" data-price="1500">
+      <div class="item-head"><span class="item-name">Fish & Chips</span><span class="price">$1.500</span></div>
+      <p>Rántott hal steak burgonyával.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="potato" data-name="Steak Burgonya" data-price="1200">
+      <div class="item-head"><span class="item-name">Steak Burgonya</span><span class="price">$1.200</span></div>
+      <p>Vastagra vágott, ropogósra sült burgonya.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+  </div>
+
+  <div class="footer">★ A HATÁRVIDÉK ÍZEI ★</div>
+</section>
+
+<section class="page">
+  <div class="brand">BLACKWOODS<small>ÉTLAP · FOLYTATÁS</small></div>
+
+  <div class="section">
+    <h2>Desszertek</h2>
+
+    <article class="item" data-id="brownie" data-name="Blackout Brownie" data-price="1600">
+      <div class="item-head"><span class="item-name">Blackout Brownie</span><span class="price">$1.600</span></div>
+      <p>Meleg csokoládébrownie vaníliafagyival és csokoládészósszal.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="waffle" data-name="Sinner's Waffle" data-price="1800">
+      <div class="item-head"><span class="item-name">Sinner's Waffle</span><span class="price">$1.800</span></div>
+      <p>Ropogós gofri Nutellával, vaníliafagyival, Oreo-morzsával, csokoládéöntettel és friss eperrel.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+  </div>
+
+  <div class="section">
+    <h2>Italok</h2>
+
+    <article class="item" data-id="desert" data-name="Desert Storm" data-price="1000">
+      <div class="item-head"><span class="item-name">Desert Storm</span><span class="price">$1.000</span></div>
+      <p>Jéghideg, alkoholmentes házi ital mentával.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="laststop" data-name="Last Stop" data-price="1000">
+      <div class="item-head"><span class="item-name">Last Stop</span><span class="price">$1.000</span></div>
+      <p>Alkoholmentes, gyümölcsös koktél mentával és lime-mal.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="ipa" data-name="Highway 69 IPA" data-price="1500">
+      <div class="item-head"><span class="item-name">Highway 69 IPA</span><span class="price">$1.500</span></div>
+      <p>Kézműves csapolt sör.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="bloody" data-name="Bloody Outlaw" data-price="1300">
+      <div class="item-head"><span class="item-name">Bloody Outlaw</span><span class="price">$1.300</span></div>
+      <p>Erős, vörös házi koktél jéggel.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="kiss" data-name="Reaper's Kiss" data-price="3000">
+      <div class="item-head"><span class="item-name">Reaper's Kiss</span><span class="price">$3.000</span></div>
+      <p>Rétegezett koktél, cseresznyével.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+  </div>
+
+  <div class="section">
+    <h2>Kávék</h2>
+
+    <article class="item" data-id="devil" data-name="Devil's Shots" data-price="700">
+      <div class="item-head"><span class="item-name">Devil's Shots</span><span class="price">$700</span></div>
+      <p>Dupla eszpresszó, intenzív aromával és sűrű cremával.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="latte" data-name="Hellride Pumkin Spice Latte" data-price="1100">
+      <div class="item-head"><span class="item-name">Hellride Pumkin Spice Latte</span><span class="price">$1.100</span></div>
+      <p>Krémes latte sütőtökkel, fahéjjal, szerecsendióval és egy leheletnyi karamellel.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+  </div>
+
+  <div class="section">
+    <h2>Falatok</h2>
+
+    <article class="item" data-id="taco" data-name="Taco" data-price="1500">
+      <div class="item-head"><span class="item-name">Taco</span><span class="price">$1.500</span></div>
+      <p>Marhahúsos taco sajttal.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+
+    <article class="item" data-id="wrap" data-name="Csirkés Wrap" data-price="1500">
+      <div class="item-head"><span class="item-name">Csirkés Wrap</span><span class="price">$1.500</span></div>
+      <p>Tortillába tekert csirke és zöldség.</p>
+      <button class="add-btn" type="button">+ Kosárba</button>
+    </article>
+  </div>
+
+  <div class="footer">KÖSZÖNJÜK, HOGY BETÉRTÉL!</div>
+</section>
+</main>
+
+<section class="cart-wrap" id="cart">
+  <h2>A rendelésed <span class="cart-count" id="cartCount">0</span></h2>
+  <div id="cartItems"><div class="empty">A kosarad még üres. Válassz valamit az étlapról!</div></div>
+
+  <div class="total">
+    <span>Végösszeg</span>
+    <span id="total">$0</span>
+  </div>
+
+  <h2>Rendelési adatok</h2>
+  <form id="orderForm">
+    <div class="checkout-grid">
+      <div class="field">
+        <label for="customerName">Karakter neve *</label>
+        <input id="customerName" name="customerName" maxlength="100" required placeholder="Pl. John Blackwood">
+      </div>
+
+      <div class="field">
+        <label for="phone">Telefonszám *</label>
+        <input id="phone" name="phone" type="tel" maxlength="40" required placeholder="Telefonszám">
+      </div>
+
+      <div class="field full">
+        <label for="method">Átvétel módja *</label>
+        <select id="method" name="method">
+          <option value="delivery">Kiszállítást kérek</option>
+          <option value="pickup">Személyesen veszem át</option>
+        </select>
+      </div>
+
+      <div class="field full" id="addressField">
+        <label for="address">Kiszállítás helye a szerveren *</label>
+        <input id="address" name="address" maxlength="300" placeholder="Pl. Sandy Shores, benzinkút mellett">
+      </div>
+
+      <div class="field full">
+        <label for="requestedTime">Mikorra kéred?</label>
+        <input id="requestedTime" name="requestedTime" maxlength="100" placeholder="Pl. Amint lehetséges vagy 20:30">
+      </div>
+
+      <div class="field full">
+        <label for="note">Megjegyzés (nem kötelező)</label>
+        <textarea id="note" name="note" maxlength="500" placeholder="Egyéb információ a rendeléshez..."></textarea>
+      </div>
+    </div>
+
+    <p class="note">A rendelés leadása után a megadott adatok a rendelési rendszerbe kerülnek. Ez a fejlesztés alatt álló oldal egyelőre helyi tesztkörnyezetben fut.</p>
+    <button class="submit-btn" id="submitBtn" type="submit">Rendelés leadása</button>
+    <div class="message" id="message" role="status" aria-live="polite"></div>
+  </form>
+</section>
+
+<script>
+const cart = new Map();
+const money = value => "$" + value.toLocaleString("de-DE");
+const cartItems = document.getElementById("cartItems");
+const cartCount = document.getElementById("cartCount");
+const totalElement = document.getElementById("total");
+const methodSelect = document.getElementById("method");
+const addressField = document.getElementById("addressField");
+const addressInput = document.getElementById("address");
+const message = document.getElementById("message");
+const submitBtn = document.getElementById("submitBtn");
+
+document.querySelectorAll(".item .add-btn").forEach(button => {
+  button.addEventListener("click", () => {
+    const item = button.closest(".item");
+    const id = item.dataset.id;
+    const current = cart.get(id);
+
+    if (current) {
+      if (current.quantity >= 50) return;
+      current.quantity++;
+    } else {
+      cart.set(id, {
+        id,
+        name: item.dataset.name,
+        price: Number(item.dataset.price),
+        quantity: 1
+      });
+    }
+
+    renderCart();
+    message.textContent = "";
+    message.className = "message";
+  });
+});
+
+function changeQuantity(id, amount) {
+  const item = cart.get(id);
+  if (!item) return;
+
+  item.quantity += amount;
+  if (item.quantity <= 0) cart.delete(id);
+  if (item.quantity > 50) item.quantity = 50;
+
+  renderCart();
+}
+
+function removeItem(id) {
+  cart.delete(id);
+  renderCart();
+}
+
+function renderCart() {
+  cartItems.replaceChildren();
+
+  let total = 0;
+  let count = 0;
+
+  if (cart.size === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "A kosarad még üres. Válassz valamit az étlapról!";
+    cartItems.appendChild(empty);
+  }
+
+  for (const item of cart.values()) {
+    total += item.price * item.quantity;
+    count += item.quantity;
+
+    const row = document.createElement("div");
+    row.className = "cart-row";
+
+    const name = document.createElement("span");
+    name.textContent = item.name;
+
+    const qty = document.createElement("span");
+    qty.append(" ");
+
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.className = "qty-btn";
+    minus.textContent = "−";
+    minus.setAttribute("aria-label", item.name + " mennyiségének csökkentése");
+    minus.addEventListener("click", () => changeQuantity(item.id, -1));
+
+    const number = document.createElement("strong");
+    number.textContent = " " + item.quantity + " ";
+
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.className = "qty-btn";
+    plus.textContent = "+";
+    plus.setAttribute("aria-label", item.name + " mennyiségének növelése");
+    plus.addEventListener("click", () => changeQuantity(item.id, 1));
+
+    qty.append(minus, number, plus);
+
+    const price = document.createElement("strong");
+    price.textContent = money(item.price * item.quantity);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-btn";
+    remove.textContent = "Törlés";
+    remove.addEventListener("click", () => removeItem(item.id));
+
+    row.append(name, qty, price, remove);
+    cartItems.appendChild(row);
+  }
+
+  cartCount.textContent = count;
+  totalElement.textContent = money(total);
+}
+
+function updateDeliveryFields() {
+  const delivery = methodSelect.value === "delivery";
+  addressField.classList.toggle("hidden", !delivery);
+  addressInput.required = delivery;
+}
+
+methodSelect.addEventListener("change", updateDeliveryFields);
+updateDeliveryFields();
+
+document.getElementById("orderForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (cart.size === 0) {
+    message.textContent = "A rendeléshez előbb tegyél termékeket a kosárba.";
+    message.className = "message error";
+    return;
+  }
+
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+
+  const order = {
+    customerName: String(formData.get("customerName") || "").trim(),
+    phone: String(formData.get("phone") || "").trim(),
+    method: String(formData.get("method")),
+    address: String(formData.get("address") || "").trim(),
+    requestedTime: String(formData.get("requestedTime") || "").trim(),
+    note: String(formData.get("note") || "").trim(),
+    items: Array.from(cart.values()).map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    }))
+  };
+
+  if (!order.customerName || !order.phone) {
+    message.textContent = "Add meg a nevedet és a telefonszámodat.";
+    message.className = "message error";
+    return;
+  }
+
+  if (order.method === "delivery" && !order.address) {
+    message.textContent = "Kiszállításhoz add meg a helyszínt.";
+    message.className = "message error";
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Rendelés küldése...";
+  message.textContent = "";
+
+  try {
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(order)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "A rendelés nem sikerült.");
+    }
+
+    message.textContent =
+      "A rendelésed sikeresen rögzítve! Rendelésazonosító: " + result.orderId;
+    message.className = "message success";
+
+    cart.clear();
+    renderCart();
+    form.reset();
+    updateDeliveryFields();
+  } catch (error) {
+    message.textContent =
+      "Nem sikerült elküldeni a rendelést. Ellenőrizd, hogy fut-e a szerver, majd próbáld újra.";
+    message.className = "message error";
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Rendelés leadása";
+  }
+});
+
+renderCart();
+</script>
+</body>
+</html>

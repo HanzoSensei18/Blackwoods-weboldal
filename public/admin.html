@@ -1,0 +1,534 @@
+
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwoods | Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Roboto+Slab:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  padding: 24px 14px 50px;
+  background: radial-gradient(ellipse at top, #55402a, #21180f 60%, #100c08);
+  color: #352316;
+  font-family: 'Roboto Slab', Georgia, serif;
+}
+main {
+  max-width: 1000px;
+  margin: auto;
+  background: #e4d2ad;
+  border: 6px solid #382417;
+  padding: 24px;
+  box-shadow: 0 20px 55px #0009;
+}
+h1, h2 {
+  font-family: 'Rye', Georgia, serif;
+  font-weight: 400;
+}
+h1 { text-align: center; }
+input, button, select {
+  font: inherit;
+  padding: 10px;
+}
+input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 6px 0 12px;
+}
+button {
+  cursor: pointer;
+  border: 1px solid #98703c;
+  background: #382417;
+  color: #f0d6a4;
+}
+button:hover { background: #583a24; }
+button:disabled { opacity: .6; cursor: wait; }
+.hidden { display: none !important; }
+.message { margin: 12px 0; line-height: 1.5; }
+.error { color: #8b2019; }
+.order {
+  border: 1px solid #98703c;
+  padding: 16px;
+  margin: 14px 0;
+  background: #f0e2c4;
+  overflow-wrap: anywhere;
+}
+.order-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.order p { line-height: 1.6; }
+.order-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.order-controls select { max-width: 180px; }
+.small { font-size: 12px; color: #68543d; }
+#orders { margin-top: 20px; }
+.top-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.status-new { font-weight: 700; color: #8b2019; }
+@media(max-width:600px) {
+  main { padding: 15px; }
+}
+</style>
+</head>
+
+<body>
+<main>
+  <h1>Blackwoods</h1>
+  <p style="text-align:center">ADMINISZTRÁCIÓ · RENDELÉSEK</p>
+
+  <section id="loginSection">
+    <h2>Adminbelépés</h2>
+
+    <form id="loginForm">
+      <label for="username">Felhasználónév</label>
+      <input id="username" name="username"
+             autocomplete="username" required>
+
+      <label for="password">Jelszó</label>
+      <input id="password" name="password" type="password"
+             autocomplete="current-password" required>
+
+      <button type="submit">Belépés</button>
+    </form>
+
+    <div id="loginMessage" class="message error" role="status"></div>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="order-head">
+      <h2>Beérkezett rendelések</h2>
+
+      <div class="top-controls">
+        <button id="refreshBtn" type="button">Frissítés</button>
+        <button id="notifyBtn" type="button">
+          Értesítések bekapcsolása
+        </button>
+        <button id="logoutBtn" type="button">Kilépés</button>
+      </div>
+    </div>
+
+    <p class="small">
+      A rendelések automatikusan frissülnek 5 másodpercenként.
+      Az új rendelésekhez hangjelzés és böngészős értesítés tartozik.
+    </p>
+
+    <div id="orders"></div>
+    <div id="dashboardMessage" class="message" role="status"></div>
+  </section>
+</main>
+
+<script>
+const loginSection = document.getElementById("loginSection");
+const dashboard = document.getElementById("dashboard");
+const loginMessage = document.getElementById("loginMessage");
+const dashboardMessage = document.getElementById("dashboardMessage");
+const ordersElement = document.getElementById("orders");
+const notifyBtn = document.getElementById("notifyBtn");
+
+const money = value =>
+  "$" + Number(value).toLocaleString("de-DE");
+
+let knownOrderIds = null;
+let loadingOrders = false;
+let audioContext = null;
+
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      showDashboard(false);
+    }
+    throw new Error(data.error || "A kérés nem sikerült.");
+  }
+
+  return data;
+}
+
+function showDashboard(isLoggedIn) {
+  loginSection.classList.toggle("hidden", isLoggedIn);
+  dashboard.classList.toggle("hidden", !isLoggedIn);
+}
+
+function addText(parent, tag, text, className) {
+  const element = document.createElement(tag);
+  element.textContent = text;
+
+  if (className) {
+    element.className = className;
+  }
+
+  parent.appendChild(element);
+  return element;
+}
+
+async function enableNotifications() {
+  if ("Notification" in window) {
+    try {
+      const permission = await Notification.requestPermission();
+
+      if (permission === "granted") {
+        notifyBtn.textContent = "Böngészős értesítések bekapcsolva";
+      } else {
+        notifyBtn.textContent = "Értesítés nem engedélyezett";
+      }
+    } catch {
+      notifyBtn.textContent = "Az értesítés nem érhető el";
+    }
+  } else {
+    notifyBtn.textContent = "A böngésző nem támogatja az értesítést";
+  }
+
+  // A hangot felhasználói kattintás után engedélyezzük.
+  try {
+    const AudioContextClass =
+      window.AudioContext || window.webkitAudioContext;
+
+    if (AudioContextClass) {
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+      }
+
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      playOrderSound();
+    }
+  } catch {
+    // A Windows-értesítés ettől függetlenül működhet.
+  }
+}
+
+function playOrderSound() {
+  if (!audioContext || audioContext.state !== "running") return;
+
+  try {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.12;
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+
+    gain.gain.setTargetAtTime(
+      0.001,
+      audioContext.currentTime + 0.15,
+      0.05
+    );
+
+    oscillator.stop(audioContext.currentTime + 0.35);
+  } catch {
+    // A hangjelzés hibája nem állítja le az adminoldalt.
+  }
+}
+
+function announceNewOrder(order) {
+  playOrderSound();
+
+  if ("Notification" in window &&
+      Notification.permission === "granted") {
+    try {
+      const notification = new Notification(
+        "Új rendelés – Blackwoods",
+        {
+          body:
+            order.customerName +
+            " · " +
+            money(order.total) +
+            "\nÚj rendelés érkezett."
+        }
+      );
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    } catch {
+      // A böngésző letilthatja az értesítéseket.
+    }
+  }
+}
+
+async function loadOrders() {
+  if (loadingOrders || dashboard.classList.contains("hidden")) return;
+
+  loadingOrders = true;
+
+  try {
+    const orders = await api("/api/admin/orders");
+    const currentIds = new Set(orders.map(order => order.id));
+
+    // Az első betöltéskor a meglévő rendelések nem számítanak újnak.
+    if (knownOrderIds !== null) {
+      const newOrders = orders.filter(
+        order => !knownOrderIds.has(order.id)
+      );
+
+      for (const order of newOrders) {
+        announceNewOrder(order);
+      }
+
+      if (newOrders.length > 0) {
+        dashboardMessage.textContent =
+          "Új rendelés érkezett! (" + newOrders.length + ")";
+      }
+    }
+
+    knownOrderIds = currentIds;
+    ordersElement.replaceChildren();
+
+    if (orders.length === 0) {
+      addText(ordersElement, "p", "Még nincs egyetlen rendelés sem.");
+    }
+
+    for (const order of orders) {
+      const card = document.createElement("article");
+      card.className = "order";
+
+      const head = document.createElement("div");
+      head.className = "order-head";
+
+      addText(head, "strong", "Rendelés: " + order.id);
+      addText(head, "strong", money(order.total));
+      card.appendChild(head);
+
+      addText(
+        card,
+        "p",
+        "Állapot: " + order.status,
+        order.status === "Új" ? "status-new" : ""
+      );
+
+      addText(card, "p", "Karakter neve: " + order.customerName);
+      addText(card, "p", "Telefonszám: " + order.phone);
+
+      addText(
+        card,
+        "p",
+        "Átvétel: " +
+          (order.method === "delivery"
+            ? "Kiszállítás"
+            : "Személyes átvétel")
+      );
+
+      if (order.method === "delivery") {
+        addText(
+          card,
+          "p",
+          "Helyszín: " + (order.address || "Nincs megadva")
+        );
+      }
+
+      if (order.requestedTime) {
+        addText(card, "p", "Kért időpont: " + order.requestedTime);
+      }
+
+      addText(card, "p", "Tételek:");
+
+      const list = document.createElement("ul");
+
+      for (const item of order.items) {
+        addText(
+          list,
+          "li",
+          item.name + " × " + item.quantity +
+          " — " + money(item.price * item.quantity)
+        );
+      }
+
+      card.appendChild(list);
+
+      if (order.note) {
+        addText(card, "p", "Megjegyzés: " + order.note);
+      }
+
+      addText(
+        card,
+        "p",
+        "Beérkezett: " +
+          new Date(order.createdAt).toLocaleString("hu-HU"),
+        "small"
+      );
+
+      const controls = document.createElement("div");
+      controls.className = "order-controls";
+
+      const status = document.createElement("select");
+      status.setAttribute("aria-label", "Rendelés állapota");
+
+      for (const value of [
+        "Új",
+        "Folyamatban",
+        "Teljesítve",
+        "Elutasítva"
+      ]) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        option.selected = order.status === value;
+        status.appendChild(option);
+      }
+
+      const saveButton = document.createElement("button");
+      saveButton.type = "button";
+      saveButton.textContent = "Állapot mentése";
+
+      saveButton.addEventListener("click", async () => {
+        try {
+          await api(
+            "/api/admin/orders/" + encodeURIComponent(order.id),
+            {
+              method: "PATCH",
+              body: JSON.stringify({ status: status.value })
+            }
+          );
+
+          dashboardMessage.textContent =
+            "A rendelés állapota frissült.";
+
+          await loadOrders();
+        } catch (error) {
+          dashboardMessage.textContent = error.message;
+        }
+      });
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.textContent = "Rendelés törlése";
+
+      deleteButton.addEventListener("click", async () => {
+        if (!confirm("Biztosan törlöd ezt a rendelést?")) return;
+
+        try {
+          await api(
+            "/api/admin/orders/" + encodeURIComponent(order.id),
+            { method: "DELETE" }
+          );
+
+          dashboardMessage.textContent = "A rendelés törölve.";
+          await loadOrders();
+        } catch (error) {
+          dashboardMessage.textContent = error.message;
+        }
+      });
+
+      controls.append(status, saveButton, deleteButton);
+      card.appendChild(controls);
+      ordersElement.appendChild(card);
+    }
+
+    if (!dashboardMessage.textContent.startsWith("Új rendelés")) {
+      dashboardMessage.textContent =
+        "Rendelések száma: " + orders.length +
+        " · Utolsó frissítés: " +
+        new Date().toLocaleTimeString("hu-HU");
+    }
+  } catch (error) {
+    dashboardMessage.textContent = error.message;
+  } finally {
+    loadingOrders = false;
+  }
+}
+
+document.getElementById("loginForm").addEventListener(
+  "submit",
+  async event => {
+    event.preventDefault();
+    loginMessage.textContent = "";
+
+    const form = new FormData(event.currentTarget);
+
+    try {
+      await api("/api/admin/login", {
+        method: "POST",
+        body: JSON.stringify({
+          username: form.get("username"),
+          password: form.get("password")
+        })
+      });
+
+      document.getElementById("loginForm").reset();
+      knownOrderIds = null;
+      showDashboard(true);
+      await loadOrders();
+    } catch (error) {
+      loginMessage.textContent = error.message;
+    }
+  }
+);
+
+document.getElementById("refreshBtn").addEventListener(
+  "click",
+  loadOrders
+);
+
+notifyBtn.addEventListener("click", enableNotifications);
+
+document.getElementById("logoutBtn").addEventListener(
+  "click",
+  async () => {
+    try {
+      await api("/api/admin/logout", { method: "POST" });
+    } catch {
+      // Kilepeskor akkor is visszaterunk a belepesi oldalra.
+    }
+
+    showDashboard(false);
+    knownOrderIds = null;
+    ordersElement.replaceChildren();
+    dashboardMessage.textContent = "";
+  }
+);
+
+(async function init() {
+  try {
+    const session = await api("/api/admin/session");
+    showDashboard(session.authenticated);
+
+    if (session.authenticated) {
+      await loadOrders();
+    }
+  } catch {
+    showDashboard(false);
+  }
+})();
+
+// Automatikus frissites 5 masodpercenkent.
+setInterval(() => {
+  if (!dashboard.classList.contains("hidden")) {
+    loadOrders();
+  }
+}, 5000);
+</script>
+</body>
+</html>
